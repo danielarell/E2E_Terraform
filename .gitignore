@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Tests y cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Modelo serializado (no commitear modelos al repo)
+*.joblib
+*.pkl
+*.pickle
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/tfplan
+infra/*.tfvars         # Puede contener secretos — nunca commitear
+
+# AWS
+.aws/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log

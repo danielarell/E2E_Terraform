@@ -1,0 +1,18 @@
+# ─── deploy.yml ──────────────────────────────────────────────────────────────
+# Pipeline CI/CD completo para el proyecto MLOps Housing.
+#
+# Jobs:
+#   1. ci        → lint (flake8) + unit tests (pytest)
+#   2. deploy    → terraform apply para provisionar/actualizar infra en AWS
+#   3. validate  → smoke test contra el endpoint /predict recién desplegado
+#
+# Secrets requeridos en GitHub → Settings → Secrets and variables → Actions:
+#   AWS_ACCESS_KEY_ID        → clave de acceso del usuario IAM
+#   AWS_SECRET_ACCESS_KEY    → secreto del usuario IAM
+#   TF_STATE_BUCKET          → bucket para el remote state de Terraform (ej: mlops-tfstate-team01)
+#
+# Variables de entorno configurables:
+#   AWS_REGION               → región de AWS (default: us-east-1)
+#   TEAM_ID                  → identificador del equipo (default: team01)
+
+name: MLOps Pipeline

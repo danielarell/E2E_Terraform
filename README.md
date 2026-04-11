@@ -2,7 +2,52 @@
 
 ## Arquitectura
 
+GitHub Push → GitHub Actions CI/CD → Terraform Apply
+    ├── S3 Bucket      → almacena model.joblib
+    ├── EC2 t3.micro   → entrena modelo + sirve FastAPI :8000
+    └── IAM Role       → permite a EC2 leer/escribir S3 sin credenciales hardcodeadas
+
 ![alt text](image.png)
+
+## Requisitos previos
+
+| Herramienta     | Versión mínima | Para qué se usa                     |
+|-----------------|---------------|-------------------------------------|
+| Python          | 3.11          | Entrenamiento e inferencia local    |
+| Terraform       | 1.6           | Provisionar infra en AWS            |
+| AWS CLI         | 2.x           | Verificar recursos y logs           |
+| Git             | cualquier     | Control de versiones                |
+
+**Cuenta de AWS** con permisos para:
+`AmazonS3FullAccess`, `AmazonEC2FullAccess`, `IAMFullAccess`
+
+## Configuración inicial
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/<TU_ORG>/mlops-housing.git
+cd mlops-housing
+```
+
+### 2. Instalar dependencias Python
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Configurar GitHub Secrets (CI/CD)
+
+En tu repositorio → **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret                   | Valor                                    |
+|--------------------------|------------------------------------------|
+| `AWS_ACCESS_KEY_ID`      | Tu Access Key ID de AWS IAM              |
+| `AWS_SECRET_ACCESS_KEY`  | Tu Secret Access Key de AWS IAM          |
+
+> El usuario IAM necesita los permisos listados en Requisitos previos.
 
 ### Flujo detallado
 

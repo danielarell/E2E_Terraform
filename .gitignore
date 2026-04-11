@@ -8,6 +8,7 @@ venv/
 dist/
 build/
 .eggs/
+tmp/
 
 # Tests y cobertura
 .pytest_cache/

@@ -13,6 +13,208 @@
 #
 # Variables de entorno configurables:
 #   AWS_REGION               → región de AWS (default: us-east-1)
-#   TEAM_ID                  → identificador del equipo (default: team01)
+#   TEAM_ID                  → identificador del equipo en s3 (default: team01)
 
 name: MLOps Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]       # CI corre en PRs, pero deploy sólo en push a main
+
+env:
+  AWS_REGION: us-east-1
+  TEAM_ID: team01
+  PYTHON_VERSION: "3.11"
+  TF_VERSION: "1.7.5"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 1: CI — Lint y Tests
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  ci:
+    name: CI — Lint y Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip                          # Cachea dependencias entre runs
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Lint con flake8
+        run: |
+          # E501: líneas largas (permitimos hasta 120 chars)
+          # W503: salto de línea antes de operador binario (estilo aceptable)
+          flake8 src/ tests/ \
+            --max-line-length=120 \
+            --extend-ignore=W503 \
+            --statistics
+
+      - name: Tests unitarios con pytest
+        run: pytest tests/test_train.py -v --tb=short --cov=src --cov-report=term-missing --cov-fail-under=20
+
+      - name: Publicar reporte de cobertura (opcional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: .coverage
+          retention-days: 7
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 2: Deploy — Terraform apply
+# Se ejecuta SÓLO en push a main (no en PRs)
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy — Terraform Apply
+    runs-on: ubuntu-latest
+    needs: ci                            # Sólo corre si CI pasó
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    outputs:
+      endpoint_ip: ${{ steps.tf_output.outputs.endpoint_ip }}
+      predict_url: ${{ steps.tf_output.outputs.predict_url }}
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Instalar Terraform ${{ env.TF_VERSION }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false     # wrapper=false facilita capturar outputs
+
+      - name: Terraform Init
+        working-directory: infra/
+        run: |
+          terraform init \
+            -input=false \
+            -reconfigure
+
+      - name: Terraform Validate
+        working-directory: infra/
+        run: terraform validate
+
+      - name: Terraform Plan (preview)
+        working-directory: infra/
+        run: |
+          terraform plan \
+            -input=false \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="team_id=${{ env.TEAM_ID }}" \
+            -out=tfplan
+        # El -out guarda el plan para que apply use exactamente lo que se revisó
+
+      - name: Terraform Apply
+        working-directory: infra/
+        run: |
+          terraform apply \
+            -input=false \
+            -auto-approve \
+            tfplan
+
+      - name: Capturar outputs de Terraform
+        id: tf_output
+        working-directory: infra/
+        run: |
+          EC2_IP=$(terraform output -raw ec2_public_ip)
+          echo "endpoint_ip=$EC2_IP"       >> "$GITHUB_OUTPUT"
+          echo "predict_url=http://$EC2_IP:8000/predict" >> "$GITHUB_OUTPUT"
+          echo "health_url=http://$EC2_IP:8000/health"   >> "$GITHUB_OUTPUT"
+          echo "→ EC2 IP: $EC2_IP"
+          echo "→ Predict URL: http://$EC2_IP:8000/predict"
+
+      - name: Subir código fuente a S3 (para que EC2 lo descargue)
+        run: |
+          BUCKET=$(cd infra && terraform output -raw s3_bucket_name)
+          aws s3 cp src/ s3://$BUCKET/src/ --recursive
+          echo "→ Código subido a s3://$BUCKET/src/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 3: Validate — Smoke test
+# ─────────────────────────────────────────────────────────────────────────────
+  validate:
+    name: Validate — Smoke Test
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Esperar a que EC2 arranque y el modelo esté listo
+        run: |
+          echo "Esperando 150 segundos para que EC2 complete el bootstrap..."
+          sleep 150
+
+      - name: Health check
+        run: |
+          IP="${{ needs.deploy.outputs.endpoint_ip }}"
+          echo "→ Verificando http://$IP:8000/health"
+
+          # Reintentar hasta 5 veces con 20 segundos entre intentos
+          for i in {1..5}; do
+            RESPONSE=$(curl -sf "http://$IP:8000/health" || echo "FAIL")
+            echo "  Intento $i: $RESPONSE"
+
+            if echo "$RESPONSE" | grep -q '"model_loaded":true'; then
+              echo "Health check pasó — modelo cargado correctamente."
+              break
+            fi
+
+            if [ $i -eq 5 ]; then
+              echo "Health check falló después de 5 intentos."
+              exit 1
+            fi
+
+            echo "  Reintentando en 20 segundos..."
+            sleep 20
+          done
+
+      - name: Smoke test — POST /predict
+        run: |
+          IP="${{ needs.deploy.outputs.endpoint_ip }}"
+          echo "→ Enviando request de prueba a http://$IP:8000/predict"
+
+          RESPONSE=$(curl -sf -X POST \
+            "http://$IP:8000/predict" \
+            -H "Content-Type: application/json" \
+            -d '{"features": [8.3252, 41.0, 6.9841, 1.0238, 322.0, 2.5556, 37.88, -122.23]}')
+
+          echo "  Respuesta: $RESPONSE"
+
+          # Verificar que la respuesta contiene el campo 'prediction'
+          if echo "$RESPONSE" | grep -q '"prediction"'; then
+            PREDICTION=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['prediction'])")
+            echo "✓ Smoke test pasó — Predicción: $PREDICTION (x\$100,000 USD)"
+          else
+            echo "✗ Smoke test falló — respuesta inesperada: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Resumen final
+        if: always()
+        run: |
+          echo "================================================"
+          echo " Pipeline MLOps completado"
+          echo " IP: ${{ needs.deploy.outputs.endpoint_ip }}"
+          echo " Health: http://${{ needs.deploy.outputs.endpoint_ip }}:8000/health"
+          echo " Predict: http://${{ needs.deploy.outputs.endpoint_ip }}:8000/predict"
+          echo "================================================"

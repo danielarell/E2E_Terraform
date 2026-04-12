@@ -61,6 +61,8 @@ jobs:
 
       - name: Tests unitarios con pytest
         run: pytest tests/test_train.py -v --tb=short --cov=src --cov-report=term-missing --cov-fail-under=20
+        env:
+          PYTHONPATH: ./src
 
       - name: Publicar reporte de cobertura (opcional)
         if: always()

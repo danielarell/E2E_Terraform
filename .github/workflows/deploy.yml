@@ -9,11 +9,11 @@
 # Secrets requeridos en GitHub → Settings → Secrets and variables → Actions:
 #   AWS_ACCESS_KEY_ID        → clave de acceso del usuario IAM
 #   AWS_SECRET_ACCESS_KEY    → secreto del usuario IAM
-#   TF_STATE_BUCKET          → bucket para el remote state de Terraform (ej: mlops-tfstate-team01)
+#   TF_STATE_BUCKET          → bucket para el remote state de Terraform
 #
 # Variables de entorno configurables:
-#   AWS_REGION               → región de AWS (default: us-east-1)
-#   TEAM_ID                  → identificador del equipo en s3 (default: team01)
+#   AWS_REGION               → región de AWS
+#   TEAM_ID                  → identificador del equipo en s3
 
 name: MLOps Pipeline
 
@@ -203,9 +203,9 @@ jobs:
           # Verificar que la respuesta contiene el campo 'prediction'
           if echo "$RESPONSE" | grep -q '"prediction"'; then
             PREDICTION=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['prediction'])")
-            echo "✓ Smoke test pasó — Predicción: $PREDICTION (x\$100,000 USD)"
+            echo "Smoke test pasó — Predicción: $PREDICTION (x\$100,000 USD)"
           else
-            echo "✗ Smoke test falló — respuesta inesperada: $RESPONSE"
+            echo "Smoke test falló — respuesta inesperada: $RESPONSE"
             exit 1
           fi
 

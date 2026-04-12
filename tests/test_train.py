@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 from moto import mock_aws
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+ 
 from train import (
     FEATURE_NAMES,
     build_pipeline,
@@ -16,7 +18,6 @@ from train import (
     upload_to_s3,
 )
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 # Fixtures
 

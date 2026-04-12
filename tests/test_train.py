@@ -1,9 +1,6 @@
 import io
 import os
 import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 import boto3
 import joblib
 import numpy as np
@@ -19,7 +16,10 @@ from train import (
     upload_to_s3,
 )
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 # Fixtures
+
 
 @pytest.fixture(scope="module")
 def dataset():
@@ -38,6 +38,7 @@ def tmp_model_path(tmp_path):
     return str(tmp_path / "model.joblib")
 
 # Test de carga de datos
+
 
 class TestLoadData:
     def test_returns_two_elements(self, dataset):

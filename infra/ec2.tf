@@ -80,6 +80,12 @@ resource "aws_instance" "mlops_server" {
   user_data                   = base64encode(local.user_data_script)
   user_data_replace_on_change = true  # Fuerza recrear la instancia si bootstrap.sh cambia
 
+  # Esperar a que los archivos se hayan subido a S3
+  depends_on = [
+    aws_s3_object.train_py,
+    aws_s3_object.app_py
+  ]
+
   # Habilitar metadata v2 (IMDSv2) — buena práctica de seguridad
   metadata_options {
     http_endpoint               = "enabled"

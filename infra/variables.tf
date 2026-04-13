@@ -10,7 +10,7 @@ variable "aws_region" {
 variable "team_id" {
   description = "Identificador único del equipo (se usa en nombres de recursos para evitar colisiones)"
   type        = string
-  default     = "mlops_lprpdi"
+  default     = "mlops-lprpdi"
 }
 
 variable "instance_type" {

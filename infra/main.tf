@@ -11,14 +11,6 @@ terraform {
       version = "~> 5.40"
     }
   }
-
-  backend "s3" {
-    bucket           = "mlops-housing-tf-state"
-    key              = "mlops-housing/terraform.tfstate"
-    region           = "us-east-1"
-    encrypt          = true
-    dynamodb_table   = "mlops-tf-lock"
-  }
 }
 
 provider "aws" {

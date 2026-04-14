@@ -22,6 +22,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]       # CI corre en PRs, pero deploy sólo en push a main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Acción a ejecutar'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - destroy
 
 env:
   AWS_REGION: us-east-1
@@ -219,4 +229,42 @@ jobs:
           echo " IP: ${{ needs.deploy.outputs.endpoint_ip }}"
           echo " Health: http://${{ needs.deploy.outputs.endpoint_ip }}:8000/health"
           echo " Predict: http://${{ needs.deploy.outputs.endpoint_ip }}:8000/predict"
+          echo "================================================"
+          
+  destroy:
+    name: Destroy — Terraform Destroy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: infra/
+        run: terraform init -input=false
+
+      - name: Terraform Destroy
+        working-directory: infra/
+        run: terraform destroy -auto-approve -var="team_id=${{ env.TEAM_ID }}"
+
+      - name: Confirmar destrucción
+        run: |
+          echo "================================================"
+          echo " Recursos destruidos correctamente: $(date)"
+          echo " Team ID: ${{ env.TEAM_ID }}"
+          echo " Región: ${{ env.AWS_REGION }}"
           echo "================================================"

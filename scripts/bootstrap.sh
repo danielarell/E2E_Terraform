@@ -96,7 +96,7 @@ python3.11 src/train.py \
     --key "${model_key}" \
     --output /tmp/model.joblib
 
-echo "  ✓ Modelo entrenado y subido a S3."
+echo "  Modelo entrenado y subido a S3."
 
 # ── 6. Servir API ─────────────────────────────────────────────────────────────
 echo "[6/5] Lanzando servidor FastAPI..."
@@ -208,7 +208,7 @@ python3.11 src/train.py \
     --key "${model_key}" \
     --output /tmp/model.joblib
 
-echo "  ✓ Modelo entrenado y subido a S3."
+echo "  Modelo entrenado y subido a S3."
 
 # ── 6. Servir API ─────────────────────────────────────────────────────────────
 echo "[6/5] Lanzando servidor FastAPI..."

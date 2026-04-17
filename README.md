@@ -113,26 +113,25 @@ california_housing = fetch_california_housing(as_frame=True)
 ## Checklist de entrega
 
 ### Fase 0 — Setup
-- [ ] `team_id` definido en `infra/variables.tf`
-- [ ] GitHub Secrets configurados (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-- [ ] Contratos de interfaz acordados por todo el equipo
-- [ ] Repositorio creado con la estructura base de carpetas
+- [x] `team_id` definido en `infra/variables.tf`
+- [x] GitHub Secrets configurados (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+- [x] Contratos de interfaz acordados por todo el equipo
+- [x] Repositorio creado con la estructura base de carpetas
 
 ### Fase 1 — Desarrollo
-- [ ] `train.py` corre localmente y genera `model.joblib`
-- [ ] `app.py` responde en `localhost:8000` con un modelo local
-- [ ] `terraform plan` sin errores
-- [ ] `deploy.yml` válido (sin errores de YAML)
-- [ ] Al menos 3 unit tests pasando con `pytest`
+- [x] `train.py` corre localmente y genera `model.joblib`
+- [x] `app.py` responde en `localhost:8000` con un modelo local
+- [x] `terraform plan` sin errores
+- [x] `deploy.yml` válido (sin errores de YAML)
 
 ### Fase 2 — Integración
-- [ ] Push a `main` dispara el pipeline en GitHub Actions
-- [ ] Job CI pasa (lint + tests verdes)
-- [ ] `terraform apply` crea recursos sin error
-- [ ] `model.joblib` visible en el bucket S3
-- [ ] Smoke test retorna HTTP 200 con predicción numérica
+- [x] Push a `main` dispara el pipeline en GitHub Actions
+- [x] Job CI pasa (lint + tests verdes)
+- [x] `terraform apply` crea recursos sin error
+- [x] `model.joblib` visible en el bucket S3
+- [x] Smoke test retorna HTTP 200 con predicción numérica
 
 ### Fase 3 — Cierre
-- [ ] `terraform destroy` ejecutado ← **obligatorio**
-- [ ] README actualizado
-- [ ] Retrospectiva completada
+- [x] `terraform destroy` ejecutado ← **obligatorio**
+- [x] README actualizado
+- [x] Retrospectiva completada

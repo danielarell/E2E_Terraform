@@ -135,3 +135,6 @@ california_housing = fetch_california_housing(as_frame=True)
 - [x] `terraform destroy` ejecutado ← **obligatorio**
 - [x] README actualizado
 - [x] Retrospectiva completada
+
+
+# final
